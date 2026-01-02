@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日鸡血 - 设置</title>
+  <link rel="stylesheet" href="styles/options.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 头部 -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <h1>每日鸡血</h1>
+      </div>
+      <span class="version">v1.0.0</span>
+    </header>
+
+    <!-- 通知设置 -->
+    <section class="section">
+      <h2 class="section-title">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M22 5.72l-4.6-3.86-.9.66 3.5 2.95L8.5 2.5 2.62 8.62l.9.66L7 10l-4.6 3.86.9.66 4.6-3.86L11 22l5.9-5.88-3.5-2.95 4.6-3.86-.9-.66zM9.5 12.5l-2.5-2.5 1.5-1.5 2.5 2.5-1.5 1.5zM14.5 12.5l-2.5-2.5 1.5-1.5 2.5 2.5-1.5 1.5zM5 15.5l2.5 2.5-1.5 1.5-2.5-2.5 1.5-1.5zM12 15.5l2.5 2.5-1.5 1.5-2.5-2.5 1.5-1.5z"/>
+        </svg>
+        通知设置
+      </h2>
+
+      <div class="card">
+        <div class="setting-row">
+          <div class="setting-info">
+            <label class="setting-label">启用每日提醒</label>
+            <p class="setting-desc">开启后将每天定时推送励志内容</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="enabledToggle" checked>
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <label class="setting-label">推送时间</label>
+            <p class="setting-desc">每天发送励志内容的时间</p>
+          </div>
+          <input type="time" class="time-input" id="notificationTime" value="08:00">
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <label class="setting-label">通知方式</label>
+            <p class="setting-desc">选择弹窗提醒的方式</p>
+          </div>
+          <select class="select" id="notificationType">
+            <option value="both">Toast + 弹窗</option>
+            <option value="toast">仅 Toast 通知</option>
+            <option value="modal">仅弹窗提醒</option>
+          </select>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <label class="setting-label">提示音效</label>
+            <p class="setting-desc">收到通知时播放提示音</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="soundToggle" checked>
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 内容管理 -->
+    <section class="section">
+      <h2 class="section-title">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/>
+        </svg>
+        内容管理
+      </h2>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="quotes">名言库</button>
+        <button class="tab" data-tab="stories">故事库</button>
+      </div>
+
+      <!-- 名言库面板 -->
+      <div class="tab-panel active" id="quotesPanel">
+        <div class="stats-bar">
+          <span>共 <strong id="quoteCount">0</strong> 条名言</span>
+          <button class="btn btn-sm" id="addQuoteBtn">
+            <svg viewBox="0 0 24 24" width="14" height="14">
+              <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            添加名言
+          </button>
+        </div>
+
+        <div class="content-list" id="quotesList">
+          <!-- 名言列表 -->
+        </div>
+      </div>
+
+      <!-- 故事库面板 -->
+      <div class="tab-panel" id="storiesPanel">
+        <div class="stats-bar">
+          <span>共 <strong id="storyCount">0</strong> 个故事</span>
+          <button class="btn btn-sm" id="addStoryBtn">
+            <svg viewBox="0 0 24 24" width="14" height="14">
+              <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            添加故事
+          </button>
+        </div>
+
+        <div class="content-list" id="storiesList">
+          <!-- 故事列表 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 导入导出 -->
+    <section class="section">
+      <h2 class="section-title">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+        </svg>
+        导入导出
+      </h2>
+
+      <div class="card">
+        <div class="action-row">
+          <div class="action-info">
+            <h4>导出数据</h4>
+            <p>将你的名言和故事导出为 JSON 文件</p>
+          </div>
+          <button class="btn btn-secondary" id="exportBtn">导出</button>
+        </div>
+
+        <div class="action-row">
+          <div class="action-info">
+            <h4>导入数据</h4>
+            <p>从 JSON 文件导入名言和故事</p>
+          </div>
+          <button class="btn btn-secondary" id="importBtn">导入</button>
+          <input type="file" id="importFile" accept=".json" style="display: none;">
+        </div>
+
+        <div class="action-row">
+          <div class="action-info">
+            <h4>恢复默认</h4>
+            <p>恢复默认的名言和故事库</p>
+          </div>
+          <button class="btn btn-danger" id="resetBtn">恢复</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 在线抓取 -->
+    <section class="section">
+      <h2 class="section-title">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+        </svg>
+        在线抓取
+      </h2>
+
+      <div class="card">
+        <div class="input-group">
+          <input type="url" class="input" id="scrapeUrl" placeholder="输入网页URL (如豆瓣读书链接)">
+          <button class="btn btn-primary" id="scrapeBtn">抓取</button>
+        </div>
+        <p class="input-hint">抓取页面的标题和文本内容作为励志内容</p>
+
+        <div class="scrape-preview" id="scrapePreview" style="display: none;">
+          <h4>抓取预览</h4>
+          <div class="preview-content" id="scrapeContent"></div>
+          <div class="preview-actions">
+            <button class="btn btn-secondary" id="saveAsQuoteBtn">保存为名言</button>
+            <button class="btn btn-secondary" id="saveAsStoryBtn">保存为故事</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 关于 -->
+    <section class="section">
+      <h2 class="section-title">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+        </svg>
+        关于
+      </h2>
+
+      <div class="card about-card">
+        <div class="about-icon">⚡</div>
+        <h3>每日鸡血</h3>
+        <p class="version-info">版本 1.0.0</p>
+        <p class="about-desc">每天定时推送励志名言和故事，让你在奋斗的道路上永不孤单。</p>
+        <div class="about-links">
+          <a href="#" class="about-link">使用说明</a>
+          <span class="divider">|</span>
+          <a href="#" class="about-link">反馈建议</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 添加/编辑名言弹窗 -->
+  <div class="modal-overlay" id="quoteModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="quoteModalTitle">添加名言</h3>
+        <button class="modal-close" onclick="closeQuoteModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>名言内容</label>
+          <textarea class="textarea" id="quoteText" rows="4" placeholder="输入励志名言..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>作者 (可选)</label>
+          <input type="text" class="input" id="quoteAuthor" placeholder="出处/作者">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeQuoteModal()">取消</button>
+        <button class="btn btn-primary" id="saveQuoteBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加/编辑故事弹窗 -->
+  <div class="modal-overlay" id="storyModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="storyModalTitle">添加故事</h3>
+        <button class="modal-close" onclick="closeStoryModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>故事标题</label>
+          <input type="text" class="input" id="storyTitle" placeholder="输入故事标题...">
+        </div>
+        <div class="form-group">
+          <label>故事内容</label>
+          <textarea class="textarea" id="storyText" rows="6" placeholder="输入故事内容..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeStoryModal()">取消</button>
+        <button class="btn btn-primary" id="saveStoryBtn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>

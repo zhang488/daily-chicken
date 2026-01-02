@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日鸡血 - 本地预览</title>
+  <link rel="stylesheet" href="styles/popup.css">
+  <link rel="stylesheet" href="styles/options.css">
+  <link rel="stylesheet" href="styles/notification.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #121212;
+      min-height: 100vh;
+      padding: 40px;
+    }
+    .preview-container {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .preview-section {
+      margin-bottom: 40px;
+    }
+    .preview-title {
+      color: #e53935;
+      font-size: 18px;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #333;
+    }
+    .preview-note {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-left: 4px solid #e53935;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .preview-note h4 { color: #ff6f00; margin-bottom: 8px; }
+    .preview-note p { color: #b0b0b0; font-size: 14px; }
+    .preview-note code { background: #333; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div class="preview-note">
+      <h4>使用说明</h4>
+      <p>
+        本页面用于预览「每日鸡血」扩展的 UI 效果。<br>
+        如需完整功能，请将项目加载为 Chrome 扩展：
+        <code>chrome://extensions → 开发者模式 → 加载已解压的扩展程序 → 选择本文件夹</code>
+      </p>
+    </div>
+
+    <!-- 弹窗预览 -->
+    <div class="preview-section">
+      <h3 class="preview-title">弹窗预览</h3>
+      <div class="container" style="background: #1a1a1a; border-radius: 12px; padding: 20px;">
+        <div id="popupPreview"></div>
+      </div>
+    </div>
+
+    <!-- 设置页面预览 -->
+    <div class="preview-section">
+      <h3 class="preview-title">设置页面预览</h3>
+      <div style="background: #1a1a1a; border-radius: 12px; padding: 20px;">
+        <div id="optionsPreview"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 弹窗内容模板 -->
+  <template id="popupTemplate">
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <h1>每日鸡血</h1>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" title="设置">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor" d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="content-card">
+        <div class="card-header">
+          <span class="card-badge">今日名言</span>
+          <span class="card-date">12月30日</span>
+        </div>
+        <div class="card-content">
+          <blockquote class="quote-text">"种一棵树最好的时间是十年前，其次是现在。"</blockquote>
+          <cite class="quote-author">— 非洲谚语</cite>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+            换一批
+          </button>
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+            </svg>
+            复制
+          </button>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-item">
+          <span class="stat-value">15</span>
+          <span class="stat-label">名言</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">5</span>
+          <span class="stat-label">故事</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-value">7</span>
+          <span class="stat-label">连续天数</span>
+        </div>
+      </div>
+    </main>
+  </template>
+
+  <!-- 设置内容模板 -->
+  <template id="optionsTemplate">
+    <header class="header" style="margin-bottom: 24px;">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <h1>每日鸡血</h1>
+      </div>
+      <span class="version">v1.0.0</span>
+    </header>
+
+    <section class="section">
+      <h2 class="section-title">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M22 5.72l-4.6-3.86-.9.66 3.5 2.95L8.5 2.5 2.62 8.62l.9.66L7 10l-4.6 3.86.9.66 4.6-3.86L11 22l5.9-5.88-3.5-2.95 4.6-3.86-.9-.66zM9.5 12.5l-2.5-2.5 1.5-1.5 2.5 2.5-1.5 1.5zM14.5 12.5l-2.5-2.5 1.5-1.5 2.5 2.5-1.5 1.5z"/>
+        </svg>
+        通知设置
+      </h2>
+
+      <div class="card">
+        <div class="setting-row">
+          <div class="setting-info">
+            <label class="setting-label">启用每日提醒</label>
+            <p class="setting-desc">开启后将每天定时推送励志内容</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <label class="setting-label">推送时间</label>
+            <p class="setting-desc">每天发送励志内容的时间</p>
+          </div>
+          <input type="time" class="time-input" value="08:00">
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <label class="setting-label">通知方式</label>
+            <p class="setting-desc">选择弹窗提醒的方式</p>
+          </div>
+          <select class="select">
+            <option value="both" selected>Toast + 弹窗</option>
+            <option value="toast">仅 Toast 通知</option>
+            <option value="modal">仅弹窗提醒</option>
+          </select>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <label class="setting-label">提示音效</label>
+            <p class="setting-desc">收到通知时播放提示音</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path fill="currentColor" d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/>
+        </svg>
+        名言库
+      </h2>
+
+      <div class="tabs">
+        <button class="tab active">名言库</button>
+        <button class="tab">故事库</button>
+      </div>
+
+      <div class="stats-bar">
+        <span>共 <strong>15</strong> 条名言</span>
+        <button class="btn btn-sm btn-primary">
+          <svg viewBox="0 0 24 24" width="14" height="14">
+            <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </svg>
+          添加名言
+        </button>
+      </div>
+
+      <div class="content-list">
+        <div class="content-item">
+          <div class="item-content">
+            <p class="item-text">"种一棵树最好的时间是十年前，其次是现在。"</p>
+            <p class="item-author">— 非洲谚语</p>
+          </div>
+          <div class="item-actions">
+            <button class="btn-icon-sm">
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+              </svg>
+            </button>
+            <button class="btn-icon-sm danger">
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="content-item">
+          <div class="item-content">
+            <p class="item-text">"不是因为有希望才坚持，而是因为坚持才有希望。"</p>
+            <p class="item-author">— 匿名</p>
+          </div>
+          <div class="item-actions">
+            <button class="btn-icon-sm">
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+              </svg>
+            </button>
+            <button class="btn-icon-sm danger">
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <script>
+    // 渲染预览
+    document.addEventListener('DOMContentLoaded', () => {
+      const popupTemplate = document.getElementById('popupTemplate');
+      const optionsTemplate = document.getElementById('optionsTemplate');
+
+      document.getElementById('popupPreview').appendChild(popupTemplate.content.cloneNode(true));
+      document.getElementById('optionsPreview').appendChild(optionsTemplate.content.cloneNode(true));
+    });
+  </script>
+</body>
+</html>

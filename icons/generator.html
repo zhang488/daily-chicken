@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>生成图标 - 每日鸡血</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    h1 { margin-bottom: 20px; color: #e53935; }
+    p { color: #b0b0b0; margin-bottom: 30px; }
+    .canvas-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .canvas-item {
+      text-align: center;
+    }
+    canvas {
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .label { margin-top: 10px; color: #757575; font-size: 12px; }
+    .download-btn {
+      margin-top: 10px;
+      padding: 6px 12px;
+      background: #e53935;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .download-btn:hover { background: #c62828; }
+    .note {
+      margin-top: 30px;
+      padding: 16px;
+      background: #242424;
+      border-radius: 8px;
+      max-width: 600px;
+      color: #b0b0b0;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>每日鸡血 - 图标生成器</h1>
+  <p>点击下载按钮生成并保存图标文件</p>
+
+  <div class="canvas-container">
+    <div class="canvas-item">
+      <canvas id="canvas16" width="16" height="16"></canvas>
+      <div class="label">16x16</div>
+      <button class="download-btn" onclick="downloadPNG(16)">下载</button>
+    </div>
+    <div class="canvas-item">
+      <canvas id="canvas48" width="48" height="48"></canvas>
+      <div class="label">48x48</div>
+      <button class="download-btn" onclick="downloadPNG(48)">下载</button>
+    </div>
+    <div class="canvas-item">
+      <canvas id="canvas128" width="128" height="128"></canvas>
+      <div class="label">128x128</div>
+      <button class="download-btn" onclick="downloadPNG(128)">下载</button>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>说明：</strong>
+    请将下载的图标文件保存到项目的 <code>icons</code> 文件夹中，文件名分别为：
+    <code>icon16.png</code>、<code>icon48.png</code>、<code>icon128.png</code>
+  </div>
+
+  <script>
+    function drawIcon(size) {
+      const canvas = document.getElementById('canvas' + size);
+      const ctx = canvas.getContext('2d');
+
+      // 背景渐变
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#1a1a1a');
+      gradient.addColorStop(1, '#2d2d2d');
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(size/2, size/2, size/2 - 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 边框
+      ctx.strokeStyle = '#e53935';
+      ctx.lineWidth = Math.max(1, size/32);
+      ctx.stroke();
+
+      // 火焰图标
+      const scale = size / 128;
+      ctx.save();
+      ctx.translate(size/2, size/2);
+
+      // 外层火焰
+      const fireGradient = ctx.createLinearGradient(0, 20*scale, 0, -30*scale);
+      fireGradient.addColorStop(0, '#ff6f00');
+      fireGradient.addColorStop(0.5, '#e53935');
+      fireGradient.addColorStop(1, '#ffca28');
+
+      ctx.fillStyle = fireGradient;
+      ctx.beginPath();
+      ctx.moveTo(0, -30*scale);
+      ctx.bezierCurveTo(-20*scale, -15*scale, -25*scale, 5*scale, -20*scale, 20*scale);
+      ctx.bezierCurveTo(-15*scale, 32*scale, 0, 40*scale, 0, 40*scale);
+      ctx.bezierCurveTo(0, 40*scale, 15*scale, 32*scale, 20*scale, 20*scale);
+      ctx.bezierCurveTo(25*scale, 5*scale, 20*scale, -15*scale, 0, -30*scale);
+      ctx.fill();
+
+      // 内层火焰
+      ctx.fillStyle = '#ffca28';
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(0, -15*scale);
+      ctx.bezierCurveTo(-10*scale, -5*scale, -12*scale, 10*scale, -8*scale, 20*scale);
+      ctx.bezierCurveTo(-5*scale, 28*scale, 0, 32*scale, 0, 32*scale);
+      ctx.bezierCurveTo(0, 32*scale, 5*scale, 28*scale, 8*scale, 20*scale);
+      ctx.bezierCurveTo(12*scale, 10*scale, 10*scale, -5*scale, 0, -15*scale);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function downloadPNG(size) {
+      const canvas = document.getElementById('canvas' + size);
+      const link = document.createElement('a');
+      link.download = 'icon' + size + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // 绘制所有图标
+    [16, 48, 128].forEach(drawIcon);
+  </script>
+</body>
+</html>

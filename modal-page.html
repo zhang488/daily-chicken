@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日鸡血</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: rgba(0, 0, 0, 0.75);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #modal {
+      background: linear-gradient(180deg, #1a1a1a 0%, #151515 100%);
+      border: 1px solid #333;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 560px;
+      min-height: 400px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      position: relative;
+      animation: slideUp 0.3s ease;
+      display: flex;
+      flex-direction: column;
+    }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: rgba(255,255,255,0.05);
+      color: #757575;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      transition: all 0.2s;
+    }
+    .close-btn:hover { background: #e53935; color: white; }
+    .card-body {
+      padding: 32px 28px 20px;
+      flex: 1;
+      overflow-y: auto;
+      max-height: 400px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: linear-gradient(135deg, #e53935, #ff6f00);
+      color: white;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+    .dot { width: 6px; height: 6px; background: white; border-radius: 50%; animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .quote { font-size: 18px; line-height: 1.8; color: #fff; padding-left: 20px; border-left: 3px solid #e53935; margin-bottom: 16px; }
+    .author { text-align: right; font-size: 14px; color: #757575; font-style: italic; }
+    .story-title { font-size: 20px; font-weight: 600; color: #e53935; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+    .story-title::before { content: ''; width: 8px; height: 8px; background: linear-gradient(135deg, #e53935, #ff6f00); border-radius: 50%; }
+    .story-text { font-size: 15px; line-height: 1.8; color: #b0b0b0; text-align: justify; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #e53935; }
+    .card-footer { display: flex; gap: 12px; padding: 16px 28px 24px; border-top: 1px solid #333; background: rgba(0,0,0,0.2); }
+    .btn {
+      flex: 1;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-sec { background: #242424; color: #fff; border: 1px solid #333; }
+    .btn-sec:hover { border-color: #e53935; color: #e53935; background: rgba(229,57,53,0.1); }
+    .btn-pri { background: linear-gradient(135deg, #e53935, #c62828); color: white; box-shadow: 0 4px 12px rgba(229,57,53,0.3); }
+    .btn-pri:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(229,57,53,0.4); }
+    .btn-load { opacity: 0.7; pointer-events: none; }
+    .btn-load::after { content: ''; width: 14px; height: 14px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; margin-left: 4px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1a1a1a;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      z-index: 2147483648;
+      border: 1px solid #e53935;
+      opacity: 0;
+      transition: all 0.3s;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="modal">
+    <button class="close-btn" id="closeBtn">×</button>
+    <div class="card-body">
+      <div class="badge"><span class="dot"></span><span id="badgeText">每日金句</span></div>
+      <div id="contentArea"></div>
+    </div>
+    <div class="card-footer">
+      <button class="btn btn-sec" id="refreshBtn">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        换一批
+      </button>
+      <button class="btn btn-pri" id="copyBtn">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+        复制
+      </button>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="modal-page.js"></script>
+</body>
+</html>
