@@ -3,13 +3,17 @@
   console.log('每日鸡血弹框脚本开始执行');
 
   // 防止重复注入
-  if (document.getElementById('daily-chicken-modal')) {
+  if (document.getElementById('daily-chicken-host')) {
     console.log('弹框已存在，跳过注入');
     return;
   }
 
   // 从 storage 读取内容
   let content = { type: 'error', text: '请先在设置页面添加名言或故事' };
+  
+  // Shadow DOM 引用
+  let shadowRoot = null;
+  let hostElement = null;
 
   async function initModal() {
     console.log('开始初始化弹框');
@@ -29,6 +33,15 @@
 
   function showModal() {
     const styles = `
+      :host {
+        all: initial;
+        z-index: 2147483647;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 0;
+      }
       #daily-chicken-overlay {
         position: fixed;
         top: 0;
@@ -52,6 +65,10 @@
         position: relative;
         animation: dc-slideUp 0.3s ease;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        box-sizing: border-box;
+      }
+      #daily-chicken-modal * {
+        box-sizing: border-box;
       }
       @keyframes dc-fadeIn { from { opacity: 0; } to { opacity: 1; } }
       @keyframes dc-slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -71,6 +88,9 @@
         align-items: center;
         justify-content: center;
         transition: all 0.2s;
+        padding: 0;
+        margin: 0;
+        line-height: 1;
       }
       .dc-close-btn:hover { background: #e53935; color: white; }
       .dc-card-body { padding: 32px 28px 20px; }
@@ -88,11 +108,11 @@
       }
       .dc-dot { width: 6px; height: 6px; background: white; border-radius: 50%; animation: dc-pulse 1.5s ease-in-out infinite; }
       @keyframes dc-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-      .dc-quote { font-size: 18px; line-height: 1.8; color: #fff; padding-left: 20px; border-left: 3px solid #e53935; margin-bottom: 16px; }
-      .dc-author { text-align: right; font-size: 14px; color: #757575; font-style: italic; }
-      .dc-story-title { font-size: 20px; font-weight: 600; color: #e53935; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+      .dc-quote { font-size: 18px; line-height: 1.8; color: #fff; padding-left: 20px; border-left: 3px solid #e53935; margin-bottom: 16px; margin-top: 0; }
+      .dc-author { text-align: right; font-size: 14px; color: #757575; font-style: italic; margin: 0; }
+      .dc-story-title { font-size: 20px; font-weight: 600; color: #e53935; margin-bottom: 14px; margin-top: 0; display: flex; align-items: center; gap: 10px; }
       .dc-story-title::before { content: ''; width: 8px; height: 8px; background: linear-gradient(135deg, #e53935, #ff6f00); border-radius: 50%; }
-      .dc-story-text { font-size: 15px; line-height: 1.8; color: #b0b0b0; text-align: justify; white-space: pre-wrap; }
+      .dc-story-text { font-size: 15px; line-height: 1.8; color: #b0b0b0; text-align: justify; white-space: pre-wrap; margin: 0; }
       .dc-card-footer { display: flex; gap: 12px; padding: 16px 28px 24px; border-top: 1px solid #333; background: rgba(0,0,0,0.2); }
       .dc-btn {
         flex: 1;
@@ -107,6 +127,8 @@
         justify-content: center;
         gap: 6px;
         transition: all 0.2s;
+        margin: 0;
+        text-decoration: none;
       }
       .dc-btn-sec { background: #242424; color: #fff; border: 1px solid #333; }
       .dc-btn-sec:hover { border-color: #e53935; color: #e53935; background: rgba(229,57,53,0.1); }
@@ -132,10 +154,6 @@
       }
       .dc-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
     `;
-
-    const styleEl = document.createElement('style');
-    styleEl.textContent = styles;
-    document.head.appendChild(styleEl);
 
     const badgeText = content.type === 'quote' ? '每日金句' : (content.type === 'story' ? '励志故事' : '温馨提示');
     const quoteHTML = content.type === 'quote' ? `
@@ -175,15 +193,22 @@
       <div class="dc-toast" id="dc-toast"></div>
     `;
 
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    // Create Host
+    hostElement = document.createElement('div');
+    hostElement.id = 'daily-chicken-host';
+    document.body.appendChild(hostElement);
+
+    // Attach Shadow
+    shadowRoot = hostElement.attachShadow({mode: 'closed'});
+    shadowRoot.innerHTML = `<style>${styles}</style>${modalHTML}`;
 
     // 播放音效
     playSound();
 
     // 绑定事件
-    document.getElementById('dc-close').addEventListener('click', closeModal);
-    document.getElementById('dc-refresh-btn').addEventListener('click', handleRefresh);
-    document.getElementById('dc-copy-btn').addEventListener('click', handleCopy);
+    shadowRoot.getElementById('dc-close').addEventListener('click', closeModal);
+    shadowRoot.getElementById('dc-refresh-btn').addEventListener('click', handleRefresh);
+    shadowRoot.getElementById('dc-copy-btn').addEventListener('click', handleCopy);
 
     // ESC 关闭
     document.addEventListener('keydown', function escHandler(e) {
@@ -195,7 +220,8 @@
   }
 
   async function handleRefresh() {
-    const btn = document.getElementById('dc-refresh-btn');
+    if (!shadowRoot) return;
+    const btn = shadowRoot.getElementById('dc-refresh-btn');
     btn.classList.add('dc-btn-load');
     try {
       const newContent = await chrome.runtime.sendMessage({ type: 'refresh' });
@@ -222,24 +248,27 @@
   }
 
   function updateContent() {
+    if (!shadowRoot) return;
     const badgeText = content.type === 'quote' ? '每日金句' : '励志故事';
-    document.getElementById('dc-badge-text').textContent = badgeText;
+    shadowRoot.getElementById('dc-badge-text').textContent = badgeText;
 
     const html = content.type === 'quote'
       ? `<div class="dc-quote">"${escapeHtml(content.text || '')}"</div><p class="dc-author">${content.author ? '— ' + escapeHtml(content.author) : ''}</p>`
       : `<h2 class="dc-story-title">${escapeHtml(content.title || '')}</h2><p class="dc-story-text">${escapeHtml(content.text || '')}</p>`;
-    document.getElementById('dc-content-area').innerHTML = html;
+    shadowRoot.getElementById('dc-content-area').innerHTML = html;
   }
 
   function closeModal() {
-    const overlay = document.getElementById('daily-chicken-overlay');
-    if (overlay) overlay.remove();
-    const toast = document.getElementById('dc-toast');
-    if (toast) toast.remove();
+    if (hostElement) {
+      hostElement.remove();
+      hostElement = null;
+      shadowRoot = null;
+    }
   }
 
   function showToast(msg) {
-    const toast = document.getElementById('dc-toast');
+    if (!shadowRoot) return;
+    const toast = shadowRoot.getElementById('dc-toast');
     if (toast) {
       toast.textContent = msg;
       toast.classList.add('show');

@@ -19,51 +19,25 @@ const defaultSettings = {
   darkMode: false
 };
 
-// 默认名言库
-const defaultQuotes = [
-  { text: "今天的汗水，是明天的泪水。", author: "匿名" },
-  { text: "失败只有一种，那就是放弃。", author: "托马斯·爱迪生" },
-  { text: "你的时间有限，不要浪费时间活在别人的生活里。", author: "史蒂夫·乔布斯" },
-  { text: "种一棵树最好的时间是十年前，其次是现在。", author: "非洲谚语" },
-  { text: "不是因为有希望才坚持，而是因为坚持才有希望。", author: "匿名" },
-  { text: "你今天的努力，是幸运的伏笔。当下的付出，是明日的花开。", author: "匿名" },
-  { text: "生活不会辜负每一个努力的人。", author: "匿名" },
-  { text: "成功的反面不是失败，而是什么都不做。", author: "迪斯尼" },
-  { text: "乾坤未定，你我皆是黑马。", author: "匿名" },
-  { text: "愿你出走半生，归来仍是少年。", author: "匿名" },
-  { text: "星光不问赶路人，时光不负有心人。", author: "匿名" },
-  { text: "你的负担将变成礼物，你受的苦将照亮你的路。", author: "泰戈尔" },
-  { text: "即使慢，驰而不息，纵令落后，纵令失败，但一定可以达到他所向的目标。", author: "鲁迅" },
-  { text: "天行健，君子以自强不息。", author: "《周易》" },
-  { text: "为学须刚，不刚则隋隳，不刚则不进。", author: "程颐" }
-];
+// 默认名言库 - 将从 data/quotes.json 加载
+let defaultQuotes = [];
 
-// 默认故事库
-const defaultStories = [
-  {
-    title: "温水煮青蛙",
-    content: "把一只青蛙放进冷水里，然后慢慢加热。青蛙会因为舒适的水温而放松警惕，等它意识到危险时，已经没有力气跳出来了。这个故事告诉我们：生于忧患，死于安乐。不要在舒适的环境中失去斗志。"
-  },
-  {
-    title: "一美元的奇迹",
-    content: "美国作家杰克·伦敦在成名前，曾无数次收到退稿信。有一次他几乎要放弃了，但他想起母亲在病床上等着他寄钱回去。他咬牙坚持，继续写作，终于凭借《野性的呼唤》成名。成功有时只需要再坚持一下。"
-  },
-  {
-    title: "老鹰的重生",
-    content: "老鹰在40岁时面临生死抉择：要么等死，要么经历150天的蜕变。它会啄掉自己的羽毛、拔掉指甲、长出新羽毛。这个过程痛苦而漫长，但最终老鹰获得了30年的新生。有时候，我们需要打破旧有的自己，才能重获新生。"
-  },
-  {
-    title: "竹子定律",
-    content: "竹子在种下后的前4年，只能长3厘米。但从第5年开始，它以每天30厘米的速度疯狂生长，仅用6周就能长到15米。其实前4年，竹子一直在扎根，它的根系已经延伸了数米。成功需要积累，不要被前期的沉默所迷惑。"
-  },
-  {
-    title: "渔夫与商人",
-    content: "一个商人在海边看到一个渔夫躺着晒太阳。商人问：'你为什么不多捕点鱼？'渔夫反问：'然后呢？'商人说：'赚钱买更大的船。''然后呢？''赚更多钱。''然后呢？''就可以像我一样躺着晒太阳。'渔夫笑着说：'我现在就在晒太阳啊。'——人生的目标不是只有一种活法。"
-  }
-];
+// 默认故事库 - 将从 data/stories.json 加载
+let defaultStories = [];
 
 // 初始化扩展
 async function init() {
+  // 加载默认数据
+  try {
+    const quotesRes = await fetch(chrome.runtime.getURL('data/quotes.json'));
+    defaultQuotes = await quotesRes.json();
+    
+    const storiesRes = await fetch(chrome.runtime.getURL('data/stories.json'));
+    defaultStories = await storiesRes.json();
+  } catch (e) {
+    console.error('加载默认数据失败:', e);
+  }
+
   // 初始化存储
   await initializeStorage();
 
