@@ -17,12 +17,12 @@
       background: #1a1a1a;
       color: #fff;
       min-height: 100vh;
-      padding: 4px 9px;
-      overflow-x: visible;
+      padding: 12px;
       margin: 0;
       width: 100%;
-      min-width: 675px;
+      min-width: 665px;
       box-sizing: border-box;
+      overflow-x: hidden;
     }
 
     .container {
@@ -97,14 +97,14 @@
       min-width: 560px;
       background: linear-gradient(180deg, #1a1a1a 0%, #151515 100%);
       border: 1px solid #333;
-      border-radius: 12px;
+      border-radius: 24px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
       overflow: hidden;
       box-sizing: border-box;
     }
 
     .card-body {
-      padding: 20px 27px;
+      padding: 24px 32px;
       min-height: 240px;
       max-height: 240px;
       overflow-y: auto;
@@ -204,52 +204,78 @@
 
     .card-footer {
       display: flex;
-      gap: 10px;
-      padding: 14px 20px;
+      gap: 16px;
+      padding: 20px 32px;
       border-top: 1px solid #333;
       background: rgba(0, 0, 0, 0.2);
     }
 
     .btn {
       flex: 1;
-      padding: 10px 18px;
+      padding: 12px 20px;
       border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      transition: all 0.2s;
+      gap: 8px;
+      transition: all 0.1s;
+      position: relative;
     }
 
+    .btn:active {
+      transform: translateY(2px);
+      box-shadow: none !important;
+      border-bottom-width: 0 !important;
+      margin-top: 2px;
+      margin-bottom: -2px;
+      /* Prevent layout shift if we didn't use margin top */
+    }
+
+    /* 3D Button - Secondary */
     .btn-sec {
-      background: #242424;
-      color: #fff;
+      background: #2a2a2a;
+      color: #e0e0e0;
       border: 1px solid #333;
+      border-bottom: 4px solid #1f1f1f;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
 
     .btn-sec:hover {
-      border-color: #e53935;
-      color: #e53935;
-      background: rgba(229, 57, 53, 0.1);
+      background: #333;
+      color: #fff;
+      border-color: #444;
+      border-bottom-color: #2a2a2a;
     }
 
+    .btn-sec:active {
+      border-bottom: 0px solid transparent;
+    }
+
+    /* 3D Button - Primary */
     .btn-pri {
-      background: linear-gradient(135deg, #e53935, #c62828);
+      background: linear-gradient(135deg, #e53935, #d32f2f);
       color: white;
-      box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
+      border: 1px solid #c62828;
+      border-bottom: 4px solid #8e0000;
+      box-shadow: 0 4px 8px rgba(229, 57, 53, 0.2);
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
     }
 
     .btn-pri:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(229, 57, 53, 0.4);
+      background: linear-gradient(135deg, #ef5350, #e53935);
+      border-bottom-color: #a30000;
+    }
+
+    .btn-pri:active {
+      border-bottom: 0px solid transparent;
     }
 
     .btn-load {
-      opacity: 0.7;
+      opacity: 0.8;
       pointer-events: none;
     }
 
@@ -257,11 +283,11 @@
       content: '';
       width: 14px;
       height: 14px;
-      border: 2px solid transparent;
-      border-top-color: currentColor;
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      border-top-color: #fff;
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
-      margin-left: 4px;
+      margin-left: 6px;
     }
 
     @keyframes spin {
@@ -273,8 +299,8 @@
     /* 统计区域 */
     .stats {
       display: flex;
-      gap: 10px;
-      margin-top: 10px;
+      gap: 16px;
+      margin-top: 16px;
       width: 100%;
     }
 
@@ -282,45 +308,65 @@
       flex: 1;
       background: #242424;
       border: 1px solid #333;
-      border-radius: 10px;
-      padding: 16px;
+      border-radius: 24px;
+      padding: 20px;
       text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .stat:hover {
+      transform: translateY(-2px);
+      background: #2a2a2a;
     }
 
     .stat-value {
       display: block;
-      font-size: 24px;
-      font-weight: 600;
+      font-size: 28px;
+      font-weight: 700;
       color: #e53935;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
 
     .stat-label {
       font-size: 14px;
-      color: #757575;
+      color: #888;
+      margin-top: 4px;
+      font-weight: 500;
     }
 
     /* 设置链接 */
     .link-btn {
       width: 100%;
-      margin-top: 10px;
-      padding: 12px;
-      background: transparent;
+      margin-top: 16px;
+      padding: 14px;
+      background: #242424;
       border: 1px solid #333;
-      border-radius: 8px;
+      border-bottom: 4px solid #1f1f1f;
+      border-radius: 16px;
       color: #b0b0b0;
-      font-size: 14px;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      transition: all 0.2s;
+      gap: 8px;
+      transition: all 0.1s;
     }
 
     .link-btn:hover {
-      border-color: #e53935;
+      background: #2a2a2a;
       color: #e53935;
-      background: rgba(229, 57, 53, 0.1);
+      border-color: #444;
+      border-bottom-color: #2a2a2a;
+    }
+
+    .link-btn:active {
+      transform: translateY(2px);
+      border-bottom-width: 0;
+      margin-top: 18px;
+      /* Compensate for removed border + translate */
+      margin-bottom: -2px;
     }
 
     /* 内容切换动画 */
