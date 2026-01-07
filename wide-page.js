@@ -15,10 +15,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('contentArea').innerHTML = '<p style="color:#757575;text-align:center;font-size:18px;">请在扩展环境中打开此页面</p>';
     return;
   }
-  
+
   try {
     await loadContent();
+    updateProgress();
     bindEvents();
+
+    // Update progress every minute
+    setInterval(updateProgress, 60000);
   } catch (error) {
     console.error('初始化失败:', error);
     document.getElementById('contentArea').innerHTML = '<p style="color:#757575;text-align:center;font-size:18px;">初始化失败，请刷新页面重试</p>';
@@ -231,4 +235,46 @@ function escape(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+function updateProgress() {
+  const now = new Date();
+
+  // Day Progress (Remaining)
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const totalDayMs = endOfDay - startOfDay;
+  const remainingDayMs = endOfDay - now;
+  const dayPercent = Math.max(0, Math.min(100, (remainingDayMs / totalDayMs) * 100));
+
+  // Month Progress (Remaining)
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const totalMonthMs = endOfMonth - startOfMonth;
+  const remainingMonthMs = endOfMonth - now;
+  const monthPercent = Math.max(0, Math.min(100, (remainingMonthMs / totalMonthMs) * 100));
+
+  // Year Progress (Remaining)
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const endOfYear = new Date(now.getFullYear() + 1, 0, 1);
+  const totalYearMs = endOfYear - startOfYear;
+  const remainingYearMs = endOfYear - now;
+  const yearPercent = Math.max(0, Math.min(100, (remainingYearMs / totalYearMs) * 100));
+
+  // Update DOM
+  updateProgressBar('day', dayPercent);
+  updateProgressBar('month', monthPercent);
+  updateProgressBar('year', yearPercent);
+}
+
+function updateProgressBar(idPrefix, percent) {
+  const progressBar = document.getElementById(`${idPrefix}ProgressBar`);
+  const progressText = document.getElementById(`${idPrefix}ProgressText`);
+
+  if (progressBar && progressText) {
+    // Format to 1 decimal place
+    const formattedPercent = percent.toFixed(1) + '%';
+    progressBar.style.width = formattedPercent;
+    progressText.textContent = formattedPercent;
+  }
 }
