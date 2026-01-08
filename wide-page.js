@@ -10,7 +10,8 @@
 const STORAGE_KEYS = {
   QUOTES: 'dailyChicken_quotes',
   STORIES: 'dailyChicken_stories',
-  TODAY_CONTENT: 'dailyChicken_todayContent'
+  TODAY_CONTENT: 'dailyChicken_todayContent',
+  SETTINGS: 'dailyChicken_settings'
 };
 
 /**
@@ -34,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadContent();
     updateProgress();
     bindEvents();
+    initPomodoro();
 
     // 使用优化的进度更新函数
     startProgressUpdates();
@@ -395,4 +397,384 @@ function startProgressUpdates() {
   progressAnimationId = setTimeout(() => {
     startProgressUpdates();
   }, 60000);
+}
+
+// 番茄时钟功能实现
+
+/**
+ * 番茄时钟状态
+ * @typedef {Object} PomodoroState
+ * @property {boolean} isRunning - 是否正在运行
+ * @property {boolean} isPaused - 是否暂停
+ * @property {boolean} isWorkTime - 是否为自律时间
+ * @property {number} workTime - 自律时间（分钟）
+ * @property {number} breakTime - 休息时间（分钟）
+ * @property {number} remainingTime - 剩余时间（秒）
+ * @property {number} totalTime - 总时间（秒）
+ * @property {number} timerId - 定时器ID
+ * @property {Object} settings - 番茄时钟设置
+ */
+
+/**
+ * 番茄时钟状态
+ * @type {PomodoroState}
+ */
+let pomodoroState = {
+  isRunning: false,
+  isPaused: false,
+  isWorkTime: true,
+  workTime: 25,
+  breakTime: 25,
+  remainingTime: 25 * 60,
+  totalTime: 25 * 60,
+  timerId: null,
+  settings: {
+    workTime: 25,
+    breakTime: 25,
+    backgroundEnabled: true,
+    notificationEnabled: true
+  }
+};
+
+/**
+ * 从存储加载番茄时钟设置
+ */
+async function loadPomodoroSettings() {
+  try {
+    const result = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS);
+    const settings = result[STORAGE_KEYS.SETTINGS] || {};
+    const pomodoroSettings = settings.pomodoro || {};
+
+    pomodoroState.settings = {
+      workTime: pomodoroSettings.workTime || 25,
+      breakTime: pomodoroSettings.breakTime || 25,
+      backgroundEnabled: pomodoroSettings.backgroundEnabled !== false,
+      notificationEnabled: pomodoroSettings.notificationEnabled !== false
+    };
+
+    pomodoroState.workTime = pomodoroState.settings.workTime;
+    pomodoroState.breakTime = pomodoroState.settings.breakTime;
+    pomodoroState.totalTime = pomodoroState.workTime * 60;
+    pomodoroState.remainingTime = pomodoroState.totalTime;
+
+    // 从存储加载番茄时钟状态
+    const pomodoroResult = await chrome.storage.local.get('dailyChicken_pomodoroState');
+    const savedState = pomodoroResult['dailyChicken_pomodoroState'];
+
+    if (savedState) {
+      // 检查状态是否过期
+      const now = Date.now();
+      const lastUpdate = savedState.lastUpdate;
+      const elapsedSeconds = Math.floor((now - lastUpdate) / 1000);
+
+      // 如果状态是运行中的，更新剩余时间
+      if (savedState.isRunning && !savedState.isPaused) {
+        pomodoroState.isRunning = true;
+        pomodoroState.isPaused = false;
+        pomodoroState.isWorkTime = savedState.isWorkTime;
+        pomodoroState.remainingTime = Math.max(0, savedState.remainingTime - elapsedSeconds);
+
+        // 如果时间已经结束，切换到下一个阶段
+        if (pomodoroState.remainingTime <= 0) {
+          pomodoroState.isWorkTime = !pomodoroState.isWorkTime;
+          pomodoroState.totalTime = pomodoroState.isWorkTime
+            ? pomodoroState.workTime * 60
+            : pomodoroState.breakTime * 60;
+          pomodoroState.remainingTime = pomodoroState.totalTime;
+          pomodoroState.isRunning = false;
+        } else {
+          // 如果还有剩余时间，启动定时器
+          startPomodoroTimer();
+        }
+      }
+    }
+
+    // 更新按钮状态
+    updatePomodoroButtons();
+
+    updatePomodoroDisplay();
+  } catch (error) {
+    console.error('加载番茄时钟设置失败:', error);
+  }
+}
+
+/**
+ * 保存番茄时钟状态到存储
+ */
+async function savePomodoroState() {
+  try {
+    const stateToSave = {
+      isRunning: pomodoroState.isRunning,
+      isPaused: pomodoroState.isPaused,
+      isWorkTime: pomodoroState.isWorkTime,
+      remainingTime: pomodoroState.remainingTime,
+      lastUpdate: Date.now()
+    };
+
+    await chrome.storage.local.set({ 'dailyChicken_pomodoroState': stateToSave });
+  } catch (error) {
+    console.error('保存番茄时钟状态失败:', error);
+  }
+}
+
+/**
+ * 初始化番茄时钟
+ */
+async function initPomodoro() {
+  // 加载设置
+  await loadPomodoroSettings();
+
+  // 获取DOM元素
+  const startBtn = document.getElementById('startPomodoro');
+  const pauseBtn = document.getElementById('pausePomodoro');
+  const resetBtn = document.getElementById('resetPomodoro');
+
+  // 初始化显示
+  updatePomodoroDisplay();
+
+  // 绑定事件监听器
+  startBtn.addEventListener('click', startPomodoro);
+  pauseBtn.addEventListener('click', pausePomodoro);
+  resetBtn.addEventListener('click', resetPomodoro);
+
+  // 监听设置变化
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === 'local' && changes[STORAGE_KEYS.SETTINGS]) {
+      const newSettings = changes[STORAGE_KEYS.SETTINGS].newValue;
+      const newPomodoroSettings = newSettings.pomodoro || {};
+
+      pomodoroState.settings = {
+        workTime: newPomodoroSettings.workTime || 25,
+        breakTime: newPomodoroSettings.breakTime || 25,
+        backgroundEnabled: newPomodoroSettings.backgroundEnabled !== false,
+        notificationEnabled: newPomodoroSettings.notificationEnabled !== false
+      };
+
+      // 如果未运行，更新时间设置
+      if (!pomodoroState.isRunning) {
+        pomodoroState.workTime = pomodoroState.settings.workTime;
+        pomodoroState.breakTime = pomodoroState.settings.breakTime;
+        pomodoroState.totalTime = pomodoroState.workTime * 60;
+        pomodoroState.remainingTime = pomodoroState.totalTime;
+        updatePomodoroDisplay();
+      }
+    }
+  });
+}
+
+/**
+ * 启动番茄时钟定时器
+ */
+function startPomodoroTimer() {
+  // 清除可能存在的旧定时器
+  if (pomodoroState.timerId) {
+    clearInterval(pomodoroState.timerId);
+  }
+
+  // 开始计时
+  pomodoroState.timerId = setInterval(() => {
+    pomodoroState.remainingTime--;
+
+    // 更新显示
+    updatePomodoroDisplay();
+
+    // 保存状态
+    savePomodoroState();
+
+    // 时间结束
+    if (pomodoroState.remainingTime <= 0) {
+      playNotificationSound();
+
+      // 发送消息给background.js
+      if (pomodoroState.settings.backgroundEnabled) {
+        try {
+          chrome.runtime.sendMessage({
+            type: 'pomodoroComplete',
+            isWorkTime: pomodoroState.isWorkTime
+          });
+        } catch (error) {
+          console.error('发送消息给background.js失败:', error);
+        }
+      }
+
+      // 切换到下一个阶段
+      pomodoroState.isWorkTime = !pomodoroState.isWorkTime;
+      pomodoroState.totalTime = pomodoroState.isWorkTime
+        ? pomodoroState.workTime * 60
+        : pomodoroState.breakTime * 60;
+      pomodoroState.remainingTime = pomodoroState.totalTime;
+
+      // 更新显示
+      updatePomodoroDisplay();
+
+      // 保存状态
+      savePomodoroState();
+    }
+  }, 1000);
+}
+
+/**
+ * 更新番茄时钟按钮状态
+ */
+function updatePomodoroButtons() {
+  const startBtn = document.getElementById('startPomodoro');
+  const pauseBtn = document.getElementById('pausePomodoro');
+  const resetBtn = document.getElementById('resetPomodoro');
+
+  if (pomodoroState.isRunning && !pomodoroState.isPaused) {
+    // 运行中
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
+    resetBtn.disabled = false;
+  } else if (pomodoroState.isPaused) {
+    // 已暂停
+    startBtn.disabled = false;
+    pauseBtn.disabled = true;
+    resetBtn.disabled = false;
+  } else {
+    // 未运行
+    startBtn.disabled = false;
+    pauseBtn.disabled = true;
+    resetBtn.disabled = true;
+  }
+}
+
+/**
+ * 启动番茄时钟
+ */
+function startPomodoro() {
+  if (pomodoroState.isRunning && !pomodoroState.isPaused) {
+    return;
+  }
+
+  pomodoroState.isRunning = true;
+  pomodoroState.isPaused = false;
+
+  // 更新按钮状态
+  updatePomodoroButtons();
+
+  // 开始计时
+  startPomodoroTimer();
+}
+
+/**
+ * 暂停番茄时钟
+ */
+function pausePomodoro() {
+  if (!pomodoroState.isRunning) {
+    return;
+  }
+
+  pomodoroState.isRunning = false;
+  pomodoroState.isPaused = true;
+
+  // 清除定时器
+  clearInterval(pomodoroState.timerId);
+  pomodoroState.timerId = null;
+
+  // 保存状态
+  savePomodoroState();
+
+  // 更新按钮状态
+  updatePomodoroButtons();
+}
+
+/**
+ * 重置番茄时钟
+ */
+function resetPomodoro() {
+  // 清除定时器
+  if (pomodoroState.timerId) {
+    clearInterval(pomodoroState.timerId);
+    pomodoroState.timerId = null;
+  }
+
+  // 重置状态
+  pomodoroState.isRunning = false;
+  pomodoroState.isPaused = false;
+  pomodoroState.isWorkTime = true;
+  pomodoroState.workTime = pomodoroState.settings.workTime;
+  pomodoroState.breakTime = pomodoroState.settings.breakTime;
+  pomodoroState.totalTime = pomodoroState.workTime * 60;
+  pomodoroState.remainingTime = pomodoroState.totalTime;
+
+  // 保存状态
+  savePomodoroState();
+
+  // 更新按钮状态
+  updatePomodoroButtons();
+
+  // 更新显示
+  updatePomodoroDisplay();
+}
+
+/**
+ * 更新番茄时钟显示
+ */
+function updatePomodoroDisplay() {
+  // 更新状态文本
+  const statusText = pomodoroState.isWorkTime ? '自律时间' : '休息时间';
+  const stateText = pomodoroState.isRunning
+    ? (pomodoroState.isPaused ? '已暂停' : '进行中')
+    : '准备开始';
+
+  document.getElementById('pomodoroStatus').textContent = `${statusText} - ${stateText}`;
+
+  // 更新时间显示
+  const minutes = Math.floor(pomodoroState.remainingTime / 60);
+  const seconds = pomodoroState.remainingTime % 60;
+  const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  document.getElementById('pomodoroTimer').textContent = timeString;
+
+  // 更新进度条（倒计时模式 - 显示剩余时间比例）
+  const progressPercent = (pomodoroState.remainingTime / pomodoroState.totalTime) * 100;
+  document.getElementById('pomodoroProgressLabel').textContent = statusText;
+  document.getElementById('pomodoroProgressText').textContent = `${progressPercent.toFixed(1)}%`;
+
+  // 使用requestAnimationFrame更新进度条宽度
+  requestAnimationFrame(() => {
+    document.getElementById('pomodoroProgressBar').style.width = `${progressPercent}%`;
+  });
+
+  // 根据阶段更新颜色
+  const isWorkTime = pomodoroState.isWorkTime;
+  const timerElement = document.getElementById('pomodoroTimer');
+  const progressBarElement = document.getElementById('pomodoroProgressBar');
+
+  if (isWorkTime) {
+    timerElement.style.color = '#e53935';
+    progressBarElement.style.background = 'linear-gradient(90deg, #c62828, #e53935)';
+  } else {
+    timerElement.style.color = '#43a047';
+    progressBarElement.style.background = 'linear-gradient(90deg, #2e7d32, #43a047)';
+  }
+}
+
+/**
+ * 播放通知音效
+ */
+function playNotificationSound() {
+  // 创建音频上下文
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+  // 创建振荡器
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+
+  // 设置音效参数
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+  oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.2);
+  oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.4);
+
+  // 设置音量
+  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
+
+  // 播放音效
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.6);
 }

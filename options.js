@@ -56,6 +56,16 @@ function cacheElements() {
     notificationType: document.getElementById('notificationType'),
     soundToggle: document.getElementById('soundToggle'),
 
+    // 番茄时钟设置
+    workTime: document.getElementById('workTime'),
+    breakTime: document.getElementById('breakTime'),
+    decreaseWorkTime: document.getElementById('decreaseWorkTime'),
+    increaseWorkTime: document.getElementById('increaseWorkTime'),
+    decreaseBreakTime: document.getElementById('decreaseBreakTime'),
+    increaseBreakTime: document.getElementById('increaseBreakTime'),
+    pomodoroBackgroundToggle: document.getElementById('pomodoroBackgroundToggle'),
+    pomodoroNotificationToggle: document.getElementById('pomodoroNotificationToggle'),
+
     // 内容统计
     quoteCount: document.getElementById('quoteCount'),
     storyCount: document.getElementById('storyCount'),
@@ -103,6 +113,18 @@ function bindEvents() {
   elements.notificationTime.addEventListener('change', saveSettings);
   elements.notificationType.addEventListener('change', saveSettings);
   elements.soundToggle.addEventListener('change', saveSettings);
+
+  // 番茄时钟设置变更
+  elements.workTime.addEventListener('change', saveSettings);
+  elements.breakTime.addEventListener('change', saveSettings);
+  elements.pomodoroBackgroundToggle.addEventListener('change', saveSettings);
+  elements.pomodoroNotificationToggle.addEventListener('change', saveSettings);
+
+  // 番茄时钟时间调整按钮
+  elements.decreaseWorkTime.addEventListener('click', () => adjustPomodoroTime('workTime', -1));
+  elements.increaseWorkTime.addEventListener('click', () => adjustPomodoroTime('workTime', 1));
+  elements.decreaseBreakTime.addEventListener('click', () => adjustPomodoroTime('breakTime', -1));
+  elements.increaseBreakTime.addEventListener('click', () => adjustPomodoroTime('breakTime', 1));
 
   // Tab 切换
   document.querySelectorAll('.tab').forEach(tab => {
@@ -187,6 +209,15 @@ function handleStoryListClick(e) {
   }
 }
 
+// 调整番茄时钟时间
+function adjustPomodoroTime(type, delta) {
+  const input = elements[type];
+  let value = parseInt(input.value) + delta;
+  value = Math.max(1, Math.min(60, value));
+  input.value = value;
+  saveSettings();
+}
+
 // 加载设置
 async function loadSettings() {
   const result = await chrome.storage.local.get(STORAGE_KEYS.SETTINGS);
@@ -194,13 +225,27 @@ async function loadSettings() {
     enabled: true,
     time: '08:00',
     notificationType: 'both',
-    sound: true
+    sound: true,
+    // 番茄时钟设置
+    pomodoro: {
+      workTime: 25,
+      breakTime: 25,
+      backgroundEnabled: true,
+      notificationEnabled: true
+    }
   };
 
   elements.enabledToggle.checked = settings.enabled;
   elements.notificationTime.value = settings.time || '08:00';
   elements.notificationType.value = settings.notificationType || 'both';
   elements.soundToggle.checked = settings.sound !== false;
+
+  // 加载番茄时钟设置
+  const pomodoroSettings = settings.pomodoro || {};
+  elements.workTime.value = pomodoroSettings.workTime || 25;
+  elements.breakTime.value = pomodoroSettings.breakTime || 25;
+  elements.pomodoroBackgroundToggle.checked = pomodoroSettings.backgroundEnabled !== false;
+  elements.pomodoroNotificationToggle.checked = pomodoroSettings.notificationEnabled !== false;
 }
 
 // 保存设置
@@ -209,7 +254,14 @@ async function saveSettings() {
     enabled: elements.enabledToggle.checked,
     time: elements.notificationTime.value,
     notificationType: elements.notificationType.value,
-    sound: elements.soundToggle.checked
+    sound: elements.soundToggle.checked,
+    // 番茄时钟设置
+    pomodoro: {
+      workTime: parseInt(elements.workTime.value),
+      breakTime: parseInt(elements.breakTime.value),
+      backgroundEnabled: elements.pomodoroBackgroundToggle.checked,
+      notificationEnabled: elements.pomodoroNotificationToggle.checked
+    }
   };
 
   await chrome.storage.local.set({ [STORAGE_KEYS.SETTINGS]: settings });

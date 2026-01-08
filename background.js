@@ -1,7 +1,8 @@
 // 每日鸡血 - 后台服务
-// 使用 chrome.alarms API 实现定时任务
+// 使用 chrome.alarms API 实现定时任务和番茄时钟
 
 const ALARM_NAME = 'daily-chicken-notification';
+const POMODORO_ALARM_NAME = 'daily-chicken-pomodoro';
 const STORAGE_KEYS = {
   SETTINGS: 'dailyChicken_settings',
   QUOTES: 'dailyChicken_quotes',
@@ -16,7 +17,13 @@ const defaultSettings = {
   frequency: 'daily',
   notificationType: 'both',
   sound: true,
-  darkMode: false
+  darkMode: false,
+  pomodoro: {
+    workTime: 25,
+    breakTime: 25,
+    backgroundEnabled: true,
+    notificationEnabled: true
+  }
 };
 
 // 默认名言库 - 将从 data/quotes.json 加载
@@ -31,7 +38,7 @@ async function init() {
   try {
     const quotesRes = await fetch(chrome.runtime.getURL('data/quotes.json'));
     defaultQuotes = await quotesRes.json();
-    
+
     const storiesRes = await fetch(chrome.runtime.getURL('data/stories.json'));
     defaultStories = await storiesRes.json();
   } catch (e) {
@@ -47,6 +54,9 @@ async function init() {
     scheduleNotification(settings.time);
   }
 
+  // 初始化番茄时钟
+  await initPomodoro();
+
   // 监听设置变化
   chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace === 'local' && changes[STORAGE_KEYS.SETTINGS]) {
@@ -57,7 +67,47 @@ async function init() {
         chrome.alarms.clear(ALARM_NAME);
       }
     }
+    // 监听番茄时钟状态变化
+    if (namespace === 'local' && changes['dailyChicken_pomodoroState']) {
+      handlePomodoroStateChange(changes['dailyChicken_pomodoroState'].newValue);
+    }
   });
+}
+
+// 初始化番茄时钟
+async function initPomodoro() {
+  // 加载番茄时钟状态
+  const result = await chrome.storage.local.get(['dailyChicken_pomodoroState', STORAGE_KEYS.SETTINGS]);
+  const pomodoroState = result['dailyChicken_pomodoroState'];
+  const settings = result[STORAGE_KEYS.SETTINGS] || defaultSettings;
+  const pomodoroSettings = settings.pomodoro || defaultSettings.pomodoro;
+
+  // 如果番茄时钟正在运行且启用了后台运行，设置闹钟
+  if (pomodoroState && pomodoroState.isRunning && !pomodoroState.isPaused && pomodoroSettings.backgroundEnabled) {
+    const delayInSeconds = pomodoroState.remainingTime;
+    if (delayInSeconds > 0) {
+      chrome.alarms.create(POMODORO_ALARM_NAME, {
+        delayInMinutes: delayInSeconds / 60
+      });
+    }
+  }
+}
+
+// 处理番茄时钟状态变化
+async function handlePomodoroStateChange(newState) {
+  const settings = await getSettings();
+  const pomodoroSettings = settings.pomodoro || defaultSettings.pomodoro;
+
+  if (newState.isRunning && !newState.isPaused && pomodoroSettings.backgroundEnabled) {
+    // 番茄时钟开始运行，设置闹钟
+    chrome.alarms.clear(POMODORO_ALARM_NAME);
+    chrome.alarms.create(POMODORO_ALARM_NAME, {
+      delayInMinutes: newState.remainingTime / 60
+    });
+  } else {
+    // 番茄时钟暂停或停止，清除闹钟
+    chrome.alarms.clear(POMODORO_ALARM_NAME);
+  }
 }
 
 // 初始化存储
@@ -131,8 +181,56 @@ function scheduleNotification(time) {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === ALARM_NAME) {
     await sendNotification();
+  } else if (alarm.name === POMODORO_ALARM_NAME) {
+    await handlePomodoroComplete();
   }
 });
+
+// 处理番茄时钟完成
+async function handlePomodoroComplete() {
+  // 获取当前番茄时钟状态和设置
+  const result = await chrome.storage.local.get(['dailyChicken_pomodoroState', STORAGE_KEYS.SETTINGS]);
+  const currentState = result['dailyChicken_pomodoroState'];
+  const settings = result[STORAGE_KEYS.SETTINGS] || defaultSettings;
+  const pomodoroSettings = settings.pomodoro || defaultSettings.pomodoro;
+
+  if (!currentState) return;
+
+  // 发送通知
+  if (pomodoroSettings.notificationEnabled) {
+    const isWorkTime = currentState.isWorkTime;
+    const notificationTitle = isWorkTime ? '自律时间结束' : '休息时间结束';
+    const notificationMessage = isWorkTime ? '该休息一下了！' : '开始新一轮自律吧！';
+
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon48.png',
+      title: notificationTitle,
+      message: notificationMessage,
+      priority: 2,
+      requireInteraction: true
+    });
+  }
+
+  // 更新番茄时钟状态
+  const newState = {
+    isRunning: true,
+    isPaused: false,
+    isWorkTime: !currentState.isWorkTime,
+    remainingTime: currentState.isWorkTime ? pomodoroSettings.breakTime * 60 : pomodoroSettings.workTime * 60,
+    lastUpdate: Date.now()
+  };
+
+  // 保存新状态
+  await chrome.storage.local.set({ 'dailyChicken_pomodoroState': newState });
+
+  // 如果启用了后台运行，为下一个阶段设置新的闹钟
+  if (pomodoroSettings.backgroundEnabled) {
+    chrome.alarms.create(POMODORO_ALARM_NAME, {
+      delayInMinutes: newState.remainingTime / 60
+    });
+  }
+}
 
 // 发送通知
 async function sendNotification() {
