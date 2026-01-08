@@ -78,7 +78,8 @@
     <section class="section">
       <h2 class="section-title">
         <svg viewBox="0 0 24 24" width="20" height="20">
-          <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+          <path fill="currentColor"
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
         </svg>
         番茄时钟设置
       </h2>
@@ -89,10 +90,14 @@
             <label class="setting-label">自律时间</label>
             <p class="setting-desc">每次自律的时长（分钟）</p>
           </div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <button class="btn btn-sm" id="decreaseWorkTime" style="flex: 0 0 36px; padding: 8px;">-</button>
-            <input type="number" id="workTime" min="1" max="60" value="25" style="flex: 0 0 80px; background: #2a2a2a; border: 1px solid #333; border-radius: 8px; padding: 10px; color: #fff; text-align: center; font-size: 16px;">
-            <button class="btn btn-sm" id="increaseWorkTime" style="flex: 0 0 36px; padding: 8px;">+</button>
+          <div
+            style="display: flex; align-items: center; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden;">
+            <button class="btn btn-sm" id="decreaseWorkTime"
+              style="width: 36px; height: 36px; padding: 0; font-size: 18px; background: var(--bg-card); border: none; color: var(--text-primary); display: flex; align-items: center; justify-content: center; margin: 0;">-</button>
+            <input type="number" id="workTime" min="1" max="60" value="25"
+              style="width: 60px; height: 36px; background: transparent; border: none; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 0; color: var(--text-primary); text-align: center; font-size: 16px; outline: none;">
+            <button class="btn btn-sm" id="increaseWorkTime"
+              style="width: 36px; height: 36px; padding: 0; font-size: 18px; background: var(--bg-card); border: none; color: var(--text-primary); display: flex; align-items: center; justify-content: center; margin: 0;">+</button>
           </div>
         </div>
 
@@ -101,10 +106,14 @@
             <label class="setting-label">休息时间</label>
             <p class="setting-desc">每次休息的时长（分钟）</p>
           </div>
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <button class="btn btn-sm" id="decreaseBreakTime" style="flex: 0 0 36px; padding: 8px;">-</button>
-            <input type="number" id="breakTime" min="1" max="60" value="25" style="flex: 0 0 80px; background: #2a2a2a; border: 1px solid #333; border-radius: 8px; padding: 10px; color: #fff; text-align: center; font-size: 16px;">
-            <button class="btn btn-sm" id="increaseBreakTime" style="flex: 0 0 36px; padding: 8px;">+</button>
+          <div
+            style="display: flex; align-items: center; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); overflow: hidden;">
+            <button class="btn btn-sm" id="decreaseBreakTime"
+              style="width: 36px; height: 36px; padding: 0; font-size: 18px; background: var(--bg-card); border: none; color: var(--text-primary); display: flex; align-items: center; justify-content: center; margin: 0;">-</button>
+            <input type="number" id="breakTime" min="1" max="60" value="25"
+              style="width: 60px; height: 36px; background: transparent; border: none; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); padding: 0; color: var(--text-primary); text-align: center; font-size: 16px; outline: none;">
+            <button class="btn btn-sm" id="increaseBreakTime"
+              style="width: 36px; height: 36px; padding: 0; font-size: 18px; background: var(--bg-card); border: none; color: var(--text-primary); display: flex; align-items: center; justify-content: center; margin: 0;">+</button>
           </div>
         </div>
 

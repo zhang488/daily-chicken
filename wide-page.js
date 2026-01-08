@@ -437,6 +437,12 @@ let pomodoroState = {
 };
 
 /**
+ * 音频上下文，用于播放通知音效
+ * @type {AudioContext|null}
+ */
+
+
+/**
  * 从存储加载番茄时钟设置
  */
 async function loadPomodoroSettings() {
@@ -571,6 +577,9 @@ function startPomodoroTimer() {
     clearInterval(pomodoroState.timerId);
   }
 
+  // 发送状态变化消息给background.js
+  sendPomodoroStateToBackground();
+
   // 开始计时
   pomodoroState.timerId = setInterval(() => {
     pomodoroState.remainingTime--;
@@ -585,18 +594,6 @@ function startPomodoroTimer() {
     if (pomodoroState.remainingTime <= 0) {
       playNotificationSound();
 
-      // 发送消息给background.js
-      if (pomodoroState.settings.backgroundEnabled) {
-        try {
-          chrome.runtime.sendMessage({
-            type: 'pomodoroComplete',
-            isWorkTime: pomodoroState.isWorkTime
-          });
-        } catch (error) {
-          console.error('发送消息给background.js失败:', error);
-        }
-      }
-
       // 切换到下一个阶段
       pomodoroState.isWorkTime = !pomodoroState.isWorkTime;
       pomodoroState.totalTime = pomodoroState.isWorkTime
@@ -609,8 +606,33 @@ function startPomodoroTimer() {
 
       // 保存状态
       savePomodoroState();
+
+      // 发送状态变化消息给background.js
+      sendPomodoroStateToBackground();
     }
   }, 1000);
+}
+
+/**
+ * 发送番茄时钟状态给background.js
+ */
+function sendPomodoroStateToBackground() {
+  if (pomodoroState.settings.backgroundEnabled) {
+    try {
+      chrome.runtime.sendMessage({
+        type: 'pomodoroStateChange',
+        state: {
+          isRunning: pomodoroState.isRunning,
+          isPaused: pomodoroState.isPaused,
+          isWorkTime: pomodoroState.isWorkTime,
+          remainingTime: pomodoroState.remainingTime,
+          lastUpdate: Date.now()
+        }
+      });
+    } catch (error) {
+      console.error('发送消息给background.js失败:', error);
+    }
+  }
 }
 
 /**
@@ -647,6 +669,14 @@ function startPomodoro() {
     return;
   }
 
+  // 在用户交互时预先获取音频播放权限
+  try {
+    const tempAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    tempAudioContext.close();
+  } catch (error) {
+    console.error('获取音频权限失败:', error);
+  }
+
   pomodoroState.isRunning = true;
   pomodoroState.isPaused = false;
 
@@ -675,6 +705,9 @@ function pausePomodoro() {
   // 保存状态
   savePomodoroState();
 
+  // 发送状态变化消息给background.js
+  sendPomodoroStateToBackground();
+
   // 更新按钮状态
   updatePomodoroButtons();
 }
@@ -700,6 +733,9 @@ function resetPomodoro() {
 
   // 保存状态
   savePomodoroState();
+
+  // 发送状态变化消息给background.js
+  sendPomodoroStateToBackground();
 
   // 更新按钮状态
   updatePomodoroButtons();
@@ -750,31 +786,35 @@ function updatePomodoroDisplay() {
   }
 }
 
+
+
 /**
  * 播放通知音效
  */
 function playNotificationSound() {
-  // 创建音频上下文
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  try {
+    // 每次调用时创建一个新的AudioContext，确保能正常播放
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
 
-  // 创建振荡器
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
 
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
+    // 设置音效参数，与notification.js保持一致
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1);
+    oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2);
+    oscillator.frequency.setValueAtTime(1046.50, audioContext.currentTime + 0.3);
 
-  // 设置音效参数
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-  oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.2);
-  oscillator.frequency.setValueAtTime(800, audioContext.currentTime + 0.4);
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
 
-  // 设置音量
-  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.6);
-
-  // 播放音效
-  oscillator.start(audioContext.currentTime);
-  oscillator.stop(audioContext.currentTime + 0.6);
+    // 播放音效
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.6);
+  } catch (error) {
+    console.error('播放通知音效失败:', error);
+  }
 }

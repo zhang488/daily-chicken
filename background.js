@@ -296,7 +296,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'refresh') {
     handleRefresh().then(content => sendResponse(content));
     return true; // 异步响应
+  } else if (message.type === 'pomodoroStateChange') {
+    // 处理番茄时钟状态变化
+    handlePomodoroStateChange(message.state);
+    // 不需要异步响应，直接返回
+  } else if (message.type === 'pomodoroComplete') {
+    // 处理番茄时钟完成（作为备用机制）
+    handlePomodoroComplete();
+    // 不需要异步响应，直接返回
   }
+  // 默认返回undefined，表示同步响应
 });
 
 // 获取随机内容
