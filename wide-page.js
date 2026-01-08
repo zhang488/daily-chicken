@@ -1,33 +1,83 @@
-// 每日鸡血 - 宽屏页面脚本
+/**
+ * 每日鸡血 - 宽屏页面脚本
+ * @fileoverview 管理扩展的宽屏页面显示逻辑
+ */
 
+/**
+ * 存储键名常量
+ * @constant {Object}
+ */
 const STORAGE_KEYS = {
   QUOTES: 'dailyChicken_quotes',
   STORIES: 'dailyChicken_stories',
   TODAY_CONTENT: 'dailyChicken_todayContent'
 };
 
+/**
+ * 当前显示的内容
+ * @type {Object|null}
+ */
 let currentContent = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
   // 检查 chrome.runtime 是否可用
   if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id) {
     console.error('Chrome extension API 不可用');
-    document.getElementById('contentArea').innerHTML = '<p style="color:#757575;text-align:center;font-size:18px;">请在扩展环境中打开此页面</p>';
+    document.getElementById('contentArea').innerHTML = '<p style="color:#757575;text-align:center;font-size:18px;">请在 Chrome 浏览器中打开此扩展</p>';
     return;
   }
+
+  // 显示初始加载状态
+  showLoadingState();
 
   try {
     await loadContent();
     updateProgress();
     bindEvents();
 
-    // Update progress every minute
-    setInterval(updateProgress, 60000);
+    // 使用优化的进度更新函数
+    startProgressUpdates();
   } catch (error) {
     console.error('初始化失败:', error);
-    document.getElementById('contentArea').innerHTML = '<p style="color:#757575;text-align:center;font-size:18px;">初始化失败，请刷新页面重试</p>';
+    showErrorState('初始化失败，请刷新页面重试');
   }
 });
+
+// 显示加载状态
+function showLoadingState() {
+  const contentArea = document.getElementById('contentArea');
+  contentArea.innerHTML = '';
+
+  const containerDiv = document.createElement('div');
+  containerDiv.style.display = 'flex';
+  containerDiv.style.justifyContent = 'center';
+  containerDiv.style.alignItems = 'center';
+  containerDiv.style.height = '160px';
+
+  const spinnerDiv = document.createElement('div');
+  spinnerDiv.style.width = '30px';
+  spinnerDiv.style.height = '30px';
+  spinnerDiv.style.border = '3px solid rgba(229,57,53,0.3)';
+  spinnerDiv.style.borderTopColor = '#e53935';
+  spinnerDiv.style.borderRadius = '50%';
+  spinnerDiv.style.animation = 'spin 0.8s linear infinite';
+
+  containerDiv.appendChild(spinnerDiv);
+  contentArea.appendChild(containerDiv);
+}
+
+// 显示错误状态
+function showErrorState(message) {
+  const contentArea = document.getElementById('contentArea');
+  contentArea.innerHTML = '';
+
+  const errorPara = document.createElement('p');
+  errorPara.style.color = '#757575';
+  errorPara.style.textAlign = 'center';
+  errorPara.style.fontSize = '18px';
+  errorPara.textContent = message;
+  contentArea.appendChild(errorPara);
+}
 
 async function loadContent() {
   try {
@@ -36,20 +86,21 @@ async function loadContent() {
       throw new Error('Chrome storage API 不可用');
     }
 
-    // 加载统计数据
-    const quotesResult = await chrome.storage.local.get(STORAGE_KEYS.QUOTES);
-    const storiesResult = await chrome.storage.local.get(STORAGE_KEYS.STORIES);
+    // 合并存储API调用，一次性获取所有需要的数据
+    const storageResult = await chrome.storage.local.get([
+      STORAGE_KEYS.QUOTES,
+      STORAGE_KEYS.STORIES,
+      STORAGE_KEYS.TODAY_CONTENT
+    ]);
 
-    const quotes = quotesResult[STORAGE_KEYS.QUOTES] || [];
-    const stories = storiesResult[STORAGE_KEYS.STORIES] || [];
+    const quotes = storageResult[STORAGE_KEYS.QUOTES] || [];
+    const stories = storageResult[STORAGE_KEYS.STORIES] || [];
+    const savedContent = storageResult[STORAGE_KEYS.TODAY_CONTENT];
 
     document.getElementById('quoteCount').textContent = quotes.length;
     document.getElementById('storyCount').textContent = stories.length;
 
     // 优先显示今日已保存的内容
-    const savedResult = await chrome.storage.local.get(STORAGE_KEYS.TODAY_CONTENT);
-    const savedContent = savedResult[STORAGE_KEYS.TODAY_CONTENT];
-
     if (savedContent) {
       const savedDate = savedContent.date;
       const today = new Date().toDateString();
@@ -121,8 +172,17 @@ async function refreshContent(quotes, stories) {
 }
 
 function renderContent(content) {
+  const contentArea = document.getElementById('contentArea');
+
+  // 清空内容
+  contentArea.innerHTML = '';
+
   if (!content) {
-    document.getElementById('contentArea').innerHTML = '<p style="color:#757575;font-size:14px;">暂无内容</p>';
+    const noContentPara = document.createElement('p');
+    noContentPara.style.color = '#757575';
+    noContentPara.style.fontSize = '14px';
+    noContentPara.textContent = '暂无内容';
+    contentArea.appendChild(noContentPara);
     return;
   }
 
@@ -130,21 +190,48 @@ function renderContent(content) {
   document.getElementById('badgeText').textContent = badgeText;
 
   // 添加淡入动画
-  const contentArea = document.getElementById('contentArea');
   contentArea.classList.remove('content-fade');
   void contentArea.offsetWidth; // 触发重绘
   contentArea.classList.add('content-fade');
 
   if (content.type === 'quote') {
-    contentArea.innerHTML = `
-      <div class="quote">"${escape(content.text || '')}"</div>
-      <p class="author">${content.author ? '— ' + escape(content.author) : ''}</p>
-    `;
+    // 创建名言元素
+    const quoteDiv = document.createElement('div');
+    quoteDiv.className = 'quote';
+    quoteDiv.textContent = `"${content.text || ''}"`;
+    contentArea.appendChild(quoteDiv);
+
+    if (content.author) {
+      const authorPara = document.createElement('p');
+      authorPara.className = 'author';
+      authorPara.textContent = `— ${content.author}`;
+      contentArea.appendChild(authorPara);
+    }
   } else {
-    contentArea.innerHTML = `
-      <h2 class="story-title">${escape(content.title || '')}</h2>
-      <p class="story-text">${escape(content.text || '')}</p>
-    `;
+    // 创建故事元素
+    const titleH2 = document.createElement('h2');
+    titleH2.className = 'story-title';
+    titleH2.textContent = content.title || '';
+    contentArea.appendChild(titleH2);
+
+    const textPara = document.createElement('p');
+    textPara.className = 'story-text';
+    textPara.textContent = content.text || '';
+    contentArea.appendChild(textPara);
+  }
+}
+
+// 打开设置页面
+function openOptionsPage() {
+  try {
+    if (chrome.runtime && chrome.runtime.openOptionsPage) {
+      chrome.runtime.openOptionsPage();
+    } else {
+      window.open(chrome.runtime.getURL('options.html'), '_blank');
+    }
+  } catch (error) {
+    console.error('打开设置页面失败:', error);
+    window.open(chrome.runtime.getURL('options.html'), '_blank');
   }
 }
 
@@ -159,12 +246,15 @@ function bindEvents() {
         throw new Error('Chrome storage API 不可用');
       }
 
-      const quotesResult = await chrome.storage.local.get(STORAGE_KEYS.QUOTES);
-      const storiesResult = await chrome.storage.local.get(STORAGE_KEYS.STORIES);
+      // 合并存储API调用
+      const storageResult = await chrome.storage.local.get([
+        STORAGE_KEYS.QUOTES,
+        STORAGE_KEYS.STORIES
+      ]);
 
       await refreshContent(
-        quotesResult[STORAGE_KEYS.QUOTES] || [],
-        storiesResult[STORAGE_KEYS.STORIES] || []
+        storageResult[STORAGE_KEYS.QUOTES] || [],
+        storageResult[STORAGE_KEYS.STORIES] || []
       );
     } catch (error) {
       console.error('刷新失败:', error);
@@ -182,8 +272,13 @@ function bindEvents() {
       ? `"${currentContent.text || ''}" — ${currentContent.author || ''}`
       : `${currentContent.title || ''}\n\n${currentContent.text || ''}`;
 
+    const copyBtn = document.getElementById('copyBtn');
+    const originalHTML = copyBtn.innerHTML;
+    let copySuccess = false;
+
     try {
       await navigator.clipboard.writeText(text);
+      copySuccess = true;
     } catch (error) {
       console.error('复制失败:', error);
       // 降级方案：使用传统方法
@@ -195,48 +290,40 @@ function bindEvents() {
       textArea.select();
       try {
         document.execCommand('copy');
+        copySuccess = true;
       } catch (e) {
         console.error('复制失败:', e);
       }
       document.body.removeChild(textArea);
     }
+
+    // 显示复制成功反馈
+    if (copySuccess) {
+      copyBtn.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> 已复制';
+      copyBtn.style.background = 'linear-gradient(135deg, #43a047, #2e7d32)';
+      copyBtn.style.borderColor = '#2e7d32';
+      copyBtn.style.borderBottomColor = '#1b5e20';
+      copyBtn.style.boxShadow = '0 4px 8px rgba(67, 160, 71, 0.2)';
+
+      // 3秒后恢复原始状态
+      setTimeout(() => {
+        copyBtn.innerHTML = originalHTML;
+        copyBtn.style.background = 'linear-gradient(135deg, #e53935, #d32f2f)';
+        copyBtn.style.borderColor = '#c62828';
+        copyBtn.style.borderBottomColor = '#8e0000';
+        copyBtn.style.boxShadow = '0 4px 8px rgba(229, 57, 53, 0.2)';
+      }, 3000);
+    }
   });
 
   // 打开设置页面
-  document.getElementById('settingsBtn').addEventListener('click', () => {
-    try {
-      if (chrome.runtime && chrome.runtime.openOptionsPage) {
-        chrome.runtime.openOptionsPage();
-      } else {
-        window.open(chrome.runtime.getURL('options.html'), '_blank');
-      }
-    } catch (error) {
-      console.error('打开设置页面失败:', error);
-      window.open(chrome.runtime.getURL('options.html'), '_blank');
-    }
-  });
-
-  document.getElementById('openOptionsBtn').addEventListener('click', () => {
-    try {
-      if (chrome.runtime && chrome.runtime.openOptionsPage) {
-        chrome.runtime.openOptionsPage();
-      } else {
-        window.open(chrome.runtime.getURL('options.html'), '_blank');
-      }
-    } catch (error) {
-      console.error('打开设置页面失败:', error);
-      window.open(chrome.runtime.getURL('options.html'), '_blank');
-    }
-  });
+  document.getElementById('settingsBtn').addEventListener('click', openOptionsPage);
+  document.getElementById('openOptionsBtn').addEventListener('click', openOptionsPage);
 }
 
-function escape(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
+/**
+ * 更新所有进度条
+ */
 function updateProgress() {
   const now = new Date();
 
@@ -261,12 +348,19 @@ function updateProgress() {
   const remainingYearMs = endOfYear - now;
   const yearPercent = Math.max(0, Math.min(100, (remainingYearMs / totalYearMs) * 100));
 
-  // Update DOM
-  updateProgressBar('day', dayPercent);
-  updateProgressBar('month', monthPercent);
-  updateProgressBar('year', yearPercent);
+  // 使用requestAnimationFrame更新DOM
+  requestAnimationFrame(() => {
+    updateProgressBar('day', dayPercent);
+    updateProgressBar('month', monthPercent);
+    updateProgressBar('year', yearPercent);
+  });
 }
 
+/**
+ * 更新单个进度条
+ * @param {string} idPrefix - 进度条ID前缀
+ * @param {number} percent - 进度百分比（0-100）
+ */
 function updateProgressBar(idPrefix, percent) {
   const progressBar = document.getElementById(`${idPrefix}ProgressBar`);
   const progressText = document.getElementById(`${idPrefix}ProgressText`);
@@ -277,4 +371,28 @@ function updateProgressBar(idPrefix, percent) {
     progressBar.style.width = formattedPercent;
     progressText.textContent = formattedPercent;
   }
+}
+
+/**
+ * 进度更新动画ID
+ * @type {number|null}
+ */
+let progressAnimationId = null;
+
+/**
+ * 启动进度条更新循环
+ */
+function startProgressUpdates() {
+  // 清除之前的定时器
+  if (progressAnimationId) {
+    clearTimeout(progressAnimationId);
+  }
+
+  // 更新一次
+  updateProgress();
+
+  // 每分钟更新一次
+  progressAnimationId = setTimeout(() => {
+    startProgressUpdates();
+  }, 60000);
 }
