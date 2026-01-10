@@ -36,7 +36,6 @@ let quotes = [];
 let stories = [];
 let editingQuoteIndex = -1;
 let editingStoryIndex = -1;
-let scrapedContent = null;
 
 // 初始化
 document.addEventListener('DOMContentLoaded', init);
@@ -141,10 +140,7 @@ function bindEvents() {
   elements.importFile.addEventListener('change', importData);
   elements.resetBtn.addEventListener('click', resetData);
 
-  // 抓取
-  elements.scrapeBtn.addEventListener('click', scrapeUrl);
-  elements.saveAsQuoteBtn.addEventListener('click', () => saveScrapedAsQuote());
-  elements.saveAsStoryBtn.addEventListener('click', () => saveScrapedAsStory());
+
 
   // 保存表单
   elements.saveQuoteBtn.addEventListener('click', saveQuote);
@@ -556,109 +552,7 @@ async function resetData() {
   showToast('已恢复默认数据');
 }
 
-// 抓取网页
-async function scrapeUrl() {
-  const url = elements.scrapeUrl.value.trim();
-  if (!url) {
-    showToast('请输入网页地址');
-    return;
-  }
 
-  elements.scrapeBtn.textContent = '抓取中...';
-  elements.scrapeBtn.disabled = true;
-
-  try {
-    // 使用 fetch 抓取网页
-    const response = await fetch(url);
-    const text = await response.text();
-
-    // 解析 HTML
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, 'text/html');
-
-    // 提取标题
-    let title = doc.querySelector('title')?.textContent || '';
-    title = title.split(/[|_]/)[0].trim();
-
-    // 提取正文内容
-    const contentElements = doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, article, .content, .post-content');
-    let content = [];
-
-    contentElements.forEach(el => {
-      const text = el.textContent.trim();
-      if (text.length > 20) {
-        content.push(text);
-      }
-    });
-
-    // 如果没有提取到内容，尝试获取 body 文本
-    if (content.length === 0) {
-      content.push(doc.body?.textContent?.substring(0, 500) || '未能提取到内容');
-    }
-
-    scrapedContent = {
-      url: url,
-      title: title,
-      text: content.join('\n\n').substring(0, 2000)
-    };
-
-    // 显示预览
-    elements.scrapeContent.innerHTML = `
-      <p><strong>标题：</strong>${escapeHtml(title || '无标题')}</p>
-      <p><strong>内容预览：</strong></p>
-      <p>${escapeHtml(scrapedContent.text.substring(0, 300))}...</p>
-    `;
-    elements.scrapePreview.style.display = 'block';
-    showToast('抓取成功');
-
-  } catch (err) {
-    showToast('抓取失败，请检查 URL 是否正确');
-    console.error(err);
-  }
-
-  elements.scrapeBtn.textContent = '抓取';
-  elements.scrapeBtn.disabled = false;
-}
-
-// 保存抓取内容为名言
-function saveScrapedAsQuote() {
-  if (!scrapedContent) return;
-
-  const text = scrapedContent.title || (scrapedContent.text || '').substring(0, 200);
-  quotes.push({
-    text: text,
-    author: scrapedContent.url
-  });
-
-  saveContent();
-  renderQuotes();
-  showToast('已保存为名言');
-
-  clearScrapePreview();
-}
-
-// 保存抓取内容为故事
-function saveScrapedAsStory() {
-  if (!scrapedContent) return;
-
-  stories.push({
-    title: scrapedContent.title || '抓取的内容',
-    content: scrapedContent.text
-  });
-
-  saveContent();
-  renderStories();
-  showToast('已保存为故事');
-
-  clearScrapePreview();
-}
-
-// 清空抓取预览
-function clearScrapePreview() {
-  scrapedContent = null;
-  elements.scrapePreview.style.display = 'none';
-  elements.scrapeUrl.value = '';
-}
 
 // 显示 Toast
 function showToast(message) {
